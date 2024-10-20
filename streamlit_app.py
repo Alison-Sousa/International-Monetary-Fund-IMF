@@ -17,9 +17,10 @@ def get_countries():
         response = requests.get(url)
         countries = response.json()
         
-        # Verificando se a resposta contém dados
         if 'countries' in countries:
-            return pd.DataFrame(countries['countries'])
+            # Transformando os dados em DataFrame
+            country_data = [{'id': code, 'name': info['label']} for code, info in countries['countries'].items()]
+            return pd.DataFrame(country_data)
         else:
             st.error("Não foram encontrados países. Verifique a resposta da API.")
             return pd.DataFrame()
@@ -37,9 +38,10 @@ def get_indicators():
         response = requests.get(url)
         indicators = response.json()
         
-        # Verificando se a resposta contém dados
         if 'indicators' in indicators:
-            return pd.DataFrame(indicators['indicators'])
+            # Transformando os dados em DataFrame
+            indicator_data = [{'id': code, 'name': info['label'], 'description': info.get('description', '')} for code, info in indicators['indicators'].items()]
+            return pd.DataFrame(indicator_data)
         else:
             st.error("Não foram encontrados indicadores. Verifique a resposta da API.")
             return pd.DataFrame()
@@ -77,7 +79,7 @@ if countries.empty:
     st.warning("Nenhum país disponível.")
 else:
     try:
-        # Ajustando a verificação de colunas
+        # Verificando se as colunas existem
         if 'id' in countries.columns and 'name' in countries.columns:
             country_options = countries.set_index('id')['name'].to_dict()
             selected_country = st.sidebar.selectbox(
@@ -97,7 +99,7 @@ if indicators.empty:
     st.warning("Nenhum indicador disponível.")
 else:
     try:
-        # Ajustando a verificação de colunas
+        # Verificando se as colunas existem
         if 'id' in indicators.columns and 'name' in indicators.columns:
             indicator_options = indicators.set_index('id')['name'].to_dict()
             selected_indicator = st.sidebar.selectbox(
