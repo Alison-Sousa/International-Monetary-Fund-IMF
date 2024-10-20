@@ -4,33 +4,24 @@ import requests
 
 # Configuração da página
 st.set_page_config(
-    page_title='World Bank Dashboard',
+    page_title='FMI Dashboard',
     page_icon=':earth_americas:',
 )
 
 # Função para obter todos os países
 @st.cache_data
 def get_countries():
-    """Obter lista de países do Banco Mundial."""
+    """Obter lista de países do FMI."""
     try:
-        url = "https://api.worldbank.org/v2/country?format=json"
+        url = "https://www.imf.org/external/datamapper/api/v1/countries"
         response = requests.get(url)
-        data = response.json()
+        countries = response.json()
         
-        if len(data) < 2:
+        if not countries:
             st.error("Não foram encontrados países.")
             return pd.DataFrame()
 
-        countries = data[1]  # A segunda parte da resposta contém os dados
-
-        country_list = []
-        for country in countries:
-            country_list.append({
-                'id': country['id'],
-                'name': country['name'],
-            })
-
-        return pd.DataFrame(country_list)
+        return pd.DataFrame(countries)
     except Exception as e:
         st.error(f"Erro ao obter países: {e}")
         return pd.DataFrame()
@@ -38,48 +29,37 @@ def get_countries():
 # Função para obter todos os indicadores
 @st.cache_data
 def get_indicators():
-    """Obter lista de indicadores do Banco Mundial."""
+    """Obter lista de indicadores do FMI."""
     try:
-        url = "https://api.worldbank.org/v2/indicator?format=json"
+        url = "https://www.imf.org/external/datamapper/api/v1/indicators"
         response = requests.get(url)
-        data = response.json()
-
-        if len(data) < 2:
+        indicators = response.json()
+        
+        if not indicators:
             st.error("Não foram encontrados indicadores.")
             return pd.DataFrame()
 
-        indicators = data[1]  # A segunda parte da resposta contém os dados
-
-        indicator_list = []
-        for indicator in indicators:
-            indicator_list.append({
-                'id': indicator['id'],
-                'name': indicator['name'],
-            })
-
-        return pd.DataFrame(indicator_list)
+        return pd.DataFrame(indicators)
     except Exception as e:
         st.error(f"Erro ao obter indicadores: {e}")
         return pd.DataFrame()
 
-# Função para obter dados do Banco Mundial
+# Função para obter dados do FMI
 @st.cache_data
 def get_indicator_data(country_id, indicator_id, start_year, end_year):
-    """Obter dados de um indicador específico para um país do Banco Mundial."""
+    """Obter dados de um indicador específico para um país do FMI."""
     try:
-        url = f"https://api.worldbank.org/v2/country/{country_id}/indicator/{indicator_id}?date={start_year}:{end_year}&format=json"
+        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
         response = requests.get(url)
         data = response.json()
-        
-        if len(data) < 2:
+
+        if not data or 'data' not in data:
             st.error("Não foram encontrados dados para o país e indicador selecionados.")
             return pd.DataFrame()
 
-        df = pd.DataFrame(data[1])  # A segunda parte da resposta contém os dados
-        df['indicator'] = df['indicator'].apply(lambda x: x['value'])  # Extrair o nome do indicador
-        df['country'] = df['country'].apply(lambda x: x['value'])      # Extrair o nome do país
-        df.rename(columns={'date': 'year', 'value': 'value'}, inplace=True)
-        return df[['indicator', 'country', 'year', 'value']]
+        df = pd.DataFrame(data['data'])
+        df.rename(columns={'year': 'year', 'value': 'value'}, inplace=True)
+        return df[['year', 'value']]
     except Exception as e:
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()
@@ -110,7 +90,7 @@ else:
     )
 
     # Definindo o intervalo de anos
-    min_year = 1960
+    min_year = 2000
     max_year = 2022
     from_year, to_year = st.sidebar.slider(
         'Selecione o intervalo de anos',
