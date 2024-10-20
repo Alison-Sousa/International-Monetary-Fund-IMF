@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
+import plotly.express as px
 
 # Título do aplicativo
 st.title("Dashboard de Indicadores Econômicos do FMI")
@@ -25,7 +26,7 @@ def get_indicators():
     indicators = {key: value['label'] for key, value in data['indicators'].items()}
     return indicators
 
-# Função para obter dados do FMI com depuração
+# Função para obter dados do FMI
 @st.cache_data
 def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Obter dados de um indicador específico para um país do FMI."""
@@ -50,11 +51,11 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
 
 # Seleção de países
 countries = get_countries()
-country_id = st.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
+selected_countries = st.multiselect("Selecione Países:", options=list(countries.keys()), format_func=lambda x: countries[x])
 
 # Seleção de indicadores
 indicators = get_indicators()
-indicator_id = st.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
+selected_indicators = st.multiselect("Selecione Indicadores:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
 
 # Seleção de anos
 start_year = st.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
@@ -62,8 +63,29 @@ end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=
 
 # Botão para obter dados
 if st.button("Obter Dados"):
-    df = get_indicator_data(country_id, indicator_id, start_year, end_year)
-    if not df.empty:
-        st.line_chart(df.set_index('year'))
+    all_data = []
+    
+    for country_id in selected_countries:
+        for indicator_id in selected_indicators:
+            df = get_indicator_data(country_id, indicator_id, start_year, end_year)
+            if not df.empty:
+                df['country'] = countries[country_id]  # Adiciona nome do país
+                df['indicator'] = indicators[indicator_id]  # Adiciona nome do indicador
+                all_data.append(df)
+    
+    if all_data:
+        combined_df = pd.concat(all_data)
+        
+        # Gráfico 3D (se necessário)
+        fig = px.line(combined_df, x='year', y='value', color='country', title="Indicadores Econômicos do FMI")
+        st.plotly_chart(fig)
+
+        # Download de dados
+        st.download_button(
+            label="Baixar Dados em CSV",
+            data=combined_df.to_csv(index=False),
+            file_name="indicadores_economicos.csv",
+            mime="text/csv"
+        )
     else:
         st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
