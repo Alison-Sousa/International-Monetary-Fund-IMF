@@ -58,27 +58,26 @@ indicator_id = st.sidebar.selectbox("Selecione um Indicador:", options=list(indi
 start_year = st.sidebar.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
 end_year = st.sidebar.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
 
-# Botão para obter dados
-if st.sidebar.button("Obter Dados"):
-    df = get_indicator_data(country_id, indicator_id, start_year, end_year)
-    if not df.empty:
-        # Filtra os dados conforme o intervalo de anos selecionado
-        df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
-        if not df_filtered.empty:
-            # Plota o gráfico
-            st.line_chart(df_filtered.set_index('year'))
+# Obter dados automaticamente ao mudar as seleções
+df = get_indicator_data(country_id, indicator_id, start_year, end_year)
+if not df.empty:
+    # Filtra os dados conforme o intervalo de anos selecionado
+    df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
+    if not df_filtered.empty:
+        # Plota o gráfico
+        st.line_chart(df_filtered.set_index('year'))
 
-            # Exibe a URL abaixo do gráfico
-            url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
-            st.markdown(f"**Dados disponíveis em:** [API URL]({url})")
+        # Exibe a URL abaixo do gráfico
+        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
+        st.markdown(f"**Dados disponíveis em:** [API URL]({url})")
 
-            # Botão para download do CSV
-            csv = df_filtered.to_csv(index=False)
-            st.download_button(
-                label="Baixar dados como CSV",
-                data=csv,
-                file_name=f"{countries[country_id]}_{indicators[indicator_id]}.csv",
-                mime="text/csv",
-            )
-        else:
-            st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
+        # Botão para download do CSV
+        csv = df_filtered.to_csv(index=False)
+        st.download_button(
+            label="Baixar dados como CSV",
+            data=csv,
+            file_name=f"{countries[country_id]}_{indicators[indicator_id]}.csv",
+            mime="text/csv",
+        )
+    else:
+        st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
