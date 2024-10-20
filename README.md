@@ -10,15 +10,17 @@ This is a simple Streamlit application that displays economic indicators for dif
    ```bash
    $ pip install -r requirements.txt
 2. **Run the Application**
+   ```bash
    $ streamlit run streamlit_app.py
+3. **Application Navigation**
+   -**Select a Country**: Choose a country from the list to view the economic indicators.
+   -**Choose an Indicator**: Select an economic indicator from the IMF.
+   -**Define the Year Range**: Input the start and end years for the analysis.
+4. **Features**
+   -Interactive data visualization with graphs.
+   -Option to download data in CSV format.
+   -Links to access the IMF API.
 
-Application Navigation
 
-Select a Country: Choose a country from the list to view the economic indicators.
-Choose an Indicator: Select an economic indicator from the IMF.
-Define the Year Range: Input the start and end years for the analysis.
-Features
 
-Interactive data visualization with graphs.
-Option to download data in CSV format.
-Links to access the IMF API.
+
