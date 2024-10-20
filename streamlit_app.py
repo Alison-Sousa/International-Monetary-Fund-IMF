@@ -52,20 +52,19 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()
 
-# Seleção de países
+# Sidebar para seleção de países, indicadores e anos
+st.sidebar.header("Configurações de Pesquisa")
 countries = get_countries()
-country_id = st.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
+country_id = st.sidebar.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
 
-# Seleção de indicadores
 indicators = get_indicators()
-indicator_id = st.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
+indicator_id = st.sidebar.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
 
-# Seleção de anos
-start_year = st.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
-end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
+start_year = st.sidebar.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
+end_year = st.sidebar.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
 
 # Botão para obter dados
-if st.button("Obter Dados"):
+if st.sidebar.button("Obter Dados"):
     df = get_indicator_data(country_id, indicator_id, start_year, end_year)
     if not df.empty:
         # Filtra os dados conforme o intervalo de anos selecionado
