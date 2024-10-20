@@ -66,16 +66,10 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
 # Sidebar para seleção
 with st.sidebar:
     countries = get_countries()
-    if countries:
-        selected_countries = st.multiselect("Selecione Países:", options=list(countries.keys()), format_func=lambda x: countries[x])
-    else:
-        selected_countries = []  # Define uma lista vazia se não houver países
+    selected_countries = st.multiselect("Selecione Países:", options=list(countries.keys()))
 
     indicators = get_indicators()
-    if indicators:
-        selected_indicators = st.multiselect("Selecione Indicadores:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
-    else:
-        selected_indicators = []  # Define uma lista vazia se não houver indicadores
+    selected_indicators = st.multiselect("Selecione Indicadores:", options=list(indicators.keys()))
 
     start_year = st.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
     end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
