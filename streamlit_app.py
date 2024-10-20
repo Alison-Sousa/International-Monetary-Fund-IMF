@@ -25,7 +25,7 @@ def get_indicators():
     indicators = {key: value['label'] for key, value in data['indicators'].items()}
     return indicators
 
-# Função para obter dados do FMI com depuração
+# Função para obter dados do FMI
 @st.cache_data
 def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Obter dados de um indicador específico para um país do FMI."""
@@ -35,15 +35,19 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         response = requests.get(url)
         data = response.json()
         
-        st.write("Resposta da API:", data)  # Mostra a resposta da API
+        # Mostra a resposta da API para depuração
+        st.write("Resposta da API:", data)
 
-        if not data or 'data' not in data:
-            st.error("Não foram encontrados dados para o país e indicador selecionados.")
+        # Verifica se os dados estão presentes
+        if "values" in data and indicator_id in data["values"] and country_id in data["values"][indicator_id]:
+            years_data = data["values"][indicator_id][country_id]
+            # Converte os dados em DataFrame
+            df = pd.DataFrame(years_data.items(), columns=['year', 'value'])
+            df['year'] = pd.to_numeric(df['year'])
+            return df
+        else:
+            st.warning("Nenhum dado disponível para o país e indicador selecionados no intervalo de anos.")
             return pd.DataFrame()
-
-        df = pd.DataFrame(data['data'])
-        df.rename(columns={'year': 'year', 'value': 'value'}, inplace=True)
-        return df[['year', 'value']]
     except Exception as e:
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()
@@ -64,6 +68,9 @@ end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=
 if st.button("Obter Dados"):
     df = get_indicator_data(country_id, indicator_id, start_year, end_year)
     if not df.empty:
-        st.line_chart(df.set_index('year'))
-    else:
-        st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
+        # Filtra os dados conforme o intervalo de anos selecionado
+        df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
+        if not df_filtered.empty:
+            st.line_chart(df_filtered.set_index('year'))
+        else:
+            st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
