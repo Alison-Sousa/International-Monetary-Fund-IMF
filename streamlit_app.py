@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import requests
-import json
 
 # Configuração da página
 st.set_page_config(
@@ -14,12 +13,28 @@ st.set_page_config(
 def get_economic_indicators():
     """Obter indicadores econômicos do Banco Mundial."""
     try:
-        url = "https://api.worldbank.org/v2/indicator?format=json"
+        url = "https://api.worldbank.org/v2/document?format=json"
         response = requests.get(url)
-        indicators = response.json()[1]  # A segunda parte da resposta contém os dados
-        # Filtrar indicadores relacionados à economia
-        economic_indicators = [ind for ind in indicators if "economic" in ind['name'].lower()]
-        return pd.DataFrame(economic_indicators)[['id', 'name']]
+        data = response.json()
+
+        # Verifica se a resposta contém dados
+        if len(data) < 2:
+            st.error("Não foram encontrados indicadores.")
+            return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
+
+        documents = data[1]  # A segunda parte da resposta contém os dados
+
+        # Criar uma lista para armazenar os indicadores
+        indicator_list = []
+
+        # Extrair os dados dos documentos
+        for doc_id, doc_info in documents.items():
+            indicator_list.append({
+                'id': doc_info['id'],
+                'name': doc_info['display_title'],
+            })
+
+        return pd.DataFrame(indicator_list)
     except Exception as e:
         st.error(f"Erro ao obter indicadores: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
