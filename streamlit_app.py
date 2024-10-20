@@ -12,7 +12,7 @@ st.set_page_config(
 @st.cache_data
 def get_all_indicators():
     """Obter todos os indicadores do Banco Mundial."""
-    indicators = wb.data.get_indicators()
+    indicators = wb.search('')  # Obtém todos os indicadores
     return indicators[['id', 'name']]
 
 # Função para obter dados do Banco Mundial
