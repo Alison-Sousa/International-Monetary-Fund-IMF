@@ -63,10 +63,10 @@ if not df.empty:
     if not df_filtered.empty:
         fig = px.line(df_filtered, x='year', y='value', title=f"{indicators[indicator_id]} de {countries[country_id]}",
                       markers=True, line_shape='linear', template='plotly_dark')
-        
+
         color_map = px.colors.qualitative.Plotly
         fig.update_traces(line=dict(color=color_map[np.random.randint(0, len(color_map))], width=3))
-                          )
+        )
         fig.update_layout(xaxis_title='Ano', yaxis_title='Valor', title_x=0.5)
 
         st.plotly_chart(fig)
@@ -79,7 +79,7 @@ if not df.empty:
             label="Baixar dados como CSV",
             data=csv,
             file_name=f"{countries[country_id]}_{indicators[indicator_id]}.csv",
-            mime="text/csv",
+            mime="text/csv"
         )
     else:
         st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
