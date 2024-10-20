@@ -43,7 +43,7 @@ def get_indicator_data(country_ids, indicator_id, start_year, end_year):
                 # Converte os dados em DataFrame
                 df = pd.DataFrame(years_data.items(), columns=['year', 'value'])
                 df['year'] = pd.to_numeric(df['year'])
-                df['country'] = cid  # Adiciona a coluna de país
+                df['country'] = countries[cid]  # Adiciona a coluna de país
                 dfs.append(df)
         return pd.concat(dfs) if dfs else pd.DataFrame()  # Retorna um DataFrame concatenado
     except Exception as e:
@@ -86,7 +86,7 @@ if country_ids:
             st.download_button(
                 label="Baixar dados como CSV",
                 data=csv,
-                file_name=f"{'_'.join([countries[cid] for cid in country_ids])}_{indicators[indicator_id]}.csv",
+                file_name=f"{'_'.join([countries[cid].replace(' ', '_') for cid in country_ids])}_{indicators[indicator_id].replace(' ', '_')}.csv",
                 mime="text/csv",
             )
         else:
