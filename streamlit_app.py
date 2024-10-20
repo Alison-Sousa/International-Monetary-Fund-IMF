@@ -31,11 +31,8 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Obter dados de um indicador específico para um país do FMI."""
     try:
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
-        st.write(f"Solicitando dados da URL: {url}")  # Mostra a URL solicitada
         response = requests.get(url)
         data = response.json()
-        
-        st.write("Resposta da API:", data)  # Mostra a resposta da API
 
         if not data or 'data' not in data:
             st.error("Não foram encontrados dados para o país e indicador selecionados.")
@@ -48,22 +45,37 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()
 
-# Seleção de países
-countries = get_countries()
-country_id = st.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
+# Sidebar para seleção
+with st.sidebar:
+    st.header("Configurações")
+    
+    countries = get_countries()
+    country_id = st.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
+    
+    indicators = get_indicators()
+    indicator_id = st.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
+    
+    start_year = st.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
+    end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
 
-# Seleção de indicadores
-indicators = get_indicators()
-indicator_id = st.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
+    # Botão para obter dados
+    if st.button("Obter Dados"):
+        df = get_indicator_data(country_id, indicator_id, start_year, end_year)
+        if not df.empty:
+            st.session_state.df = df  # Armazena os dados em session_state para uso posterior
+            st.success("Dados obtidos com sucesso!")
+        else:
+            st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
 
-# Seleção de anos
-start_year = st.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
-end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
-
-# Botão para obter dados
-if st.button("Obter Dados"):
-    df = get_indicator_data(country_id, indicator_id, start_year, end_year)
-    if not df.empty:
-        st.line_chart(df.set_index('year'))
-    else:
-        st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
+# Exibição de gráficos e download
+if 'df' in st.session_state:
+    st.subheader(f"Gráfico para {countries[country_id]} - {indicators[indicator_id]}")
+    st.line_chart(st.session_state.df.set_index('year'))
+    
+    # Download de dados
+    st.download_button(
+        label="Baixar Dados em CSV",
+        data=st.session_state.df.to_csv(index=False),
+        file_name="indicadores_economicos.csv",
+        mime="text/csv"
+    )
