@@ -8,12 +8,43 @@ st.set_page_config(
     page_icon=':earth_americas:',
 )
 
-# Função para obter todos os indicadores econômicos
+# Função para obter todos os países
 @st.cache_data
-def get_economic_indicators():
-    """Obter indicadores econômicos do Banco Mundial."""
+def get_countries():
+    """Obter lista de países do Banco Mundial."""
     try:
-        url = "https://api.worldbank.org/v2/document?format=json"
+        url = "https://api.worldbank.org/v2/country?format=json"
+        response = requests.get(url)
+        data = response.json()
+        
+        # Verifica se a resposta contém dados
+        if len(data) < 2:
+            st.error("Não foram encontrados países.")
+            return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
+
+        countries = data[1]  # A segunda parte da resposta contém os dados
+
+        # Criar uma lista para armazenar os países
+        country_list = []
+
+        # Extrair os dados dos países
+        for country in countries:
+            country_list.append({
+                'id': country['id'],
+                'name': country['name'],
+            })
+
+        return pd.DataFrame(country_list)
+    except Exception as e:
+        st.error(f"Erro ao obter países: {e}")
+        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+
+# Função para obter indicadores disponíveis
+@st.cache_data
+def get_indicators():
+    """Obter lista de indicadores do Banco Mundial."""
+    try:
+        url = "https://api.worldbank.org/v2/indicator?format=json"
         response = requests.get(url)
         data = response.json()
 
@@ -22,16 +53,16 @@ def get_economic_indicators():
             st.error("Não foram encontrados indicadores.")
             return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
 
-        documents = data[1]  # A segunda parte da resposta contém os dados
+        indicators = data[1]  # A segunda parte da resposta contém os dados
 
         # Criar uma lista para armazenar os indicadores
         indicator_list = []
 
-        # Extrair os dados dos documentos
-        for doc_id, doc_info in documents.items():
+        # Extrair os dados dos indicadores
+        for indicator in indicators:
             indicator_list.append({
-                'id': doc_info['id'],
-                'name': doc_info['display_title'],
+                'id': indicator['id'],
+                'name': indicator['name'],
             })
 
         return pd.DataFrame(indicator_list)
@@ -41,37 +72,47 @@ def get_economic_indicators():
 
 # Função para obter dados do Banco Mundial
 @st.cache_data
-def get_indicator_data(indicator, start_year, end_year):
-    """Obter dados de um indicador específico do Banco Mundial."""
+def get_indicator_data(country_id, indicator_id, start_year, end_year):
+    """Obter dados de um indicador específico para um país do Banco Mundial."""
     try:
-        url = f"https://api.worldbank.org/v2/country/all/indicator/{indicator}?date={start_year}:{end_year}&format=json"
+        url = f"https://api.worldbank.org/v2/country/{country_id}/indicator/{indicator_id}?date={start_year}:{end_year}&format=json"
         response = requests.get(url)
         data = response.json()
         
         # Verifica se a resposta contém dados
         if len(data) < 2:
-            st.error("Não foram encontrados dados para o indicador selecionado.")
+            st.error("Não foram encontrados dados para o país e indicador selecionados.")
             return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
 
         df = pd.DataFrame(data[1])  # A segunda parte da resposta contém os dados
         # Processar as colunas de interesse
         df['indicator'] = df['indicator'].apply(lambda x: x['value'])  # Extrair o nome do indicador
         df['country'] = df['country'].apply(lambda x: x['value'])      # Extrair o nome do país
-        df.rename(columns={'date': 'year', 'value': 'poverty_headcount'}, inplace=True)
-        return df[['indicator', 'country', 'year', 'poverty_headcount']]
+        df.rename(columns={'date': 'year', 'value': 'value'}, inplace=True)
+        return df[['indicator', 'country', 'year', 'value']]
     except Exception as e:
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
 
-# Sidebar para seleção de indicadores
-st.sidebar.header('Select Economic Indicator')
-indicators = get_economic_indicators()
+# Sidebar para seleção de país e indicador
+st.sidebar.header('Filtrar por País e Indicador')
+countries = get_countries()
+indicators = get_indicators()
+
+if countries.empty:
+    st.warning("Nenhum país disponível.")
+else:
+    country_options = countries.set_index('id')['name'].to_dict()
+    selected_country = st.sidebar.selectbox(
+        'Escolha um país',
+        list(country_options.keys()),
+        format_func=lambda x: country_options[x]  # Para mostrar o nome do país
+    )
 
 if indicators.empty:
     st.warning("Nenhum indicador disponível.")
 else:
     indicator_options = indicators.set_index('id')['name'].to_dict()
-
     selected_indicator = st.sidebar.selectbox(
         'Escolha um indicador',
         list(indicator_options.keys()),
@@ -88,30 +129,13 @@ else:
         value=[min_year, max_year]
     )
 
-    # Obtendo os dados do indicador selecionado
-    data_df = get_indicator_data(selected_indicator, from_year, to_year)
+    # Obtendo os dados do indicador selecionado para o país selecionado
+    data_df = get_indicator_data(selected_country, selected_indicator, from_year, to_year)
 
     # Verificando se o DataFrame não está vazio
     if not data_df.empty:
-        st.header(f'{indicator_options[selected_indicator]} ao longo do tempo')
+        st.header(f'{indicator_options[selected_indicator]} para {country_options[selected_country]} ao longo do tempo')
         data_df['year'] = pd.to_datetime(data_df['year'], format='%Y')
-        st.line_chart(data_df.set_index('year')['poverty_headcount'])
-
-        # Mostrando dados de alguns países
-        st.header(f'{indicator_options[selected_indicator]} em Países Selecionados')
-        countries = data_df['country'].unique()
-        selected_countries = st.multiselect(
-            'Escolha os países para exibir',
-            countries
-        )
-
-        # Filtrando os dados para os países selecionados
-        if selected_countries:
-            filtered_data = data_df[data_df['country'].isin(selected_countries)]
-            for country in selected_countries:
-                country_data = filtered_data[filtered_data['country'] == country]
-                st.line_chart(country_data.set_index('year')['poverty_headcount'])
-        else:
-            st.warning("Selecione pelo menos um país para visualizar os dados.")
+        st.line_chart(data_df.set_index('year')['value'])
     else:
-        st.warning("Nenhum dado disponível para o indicador e intervalo de anos selecionados.")
+        st.warning("Nenhum dado disponível para o país e indicador selecionados.")
