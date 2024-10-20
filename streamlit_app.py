@@ -36,10 +36,8 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         response = requests.get(url)
         data = response.json()
 
-        # Verifica se os dados estão presentes
         if "values" in data and indicator_id in data["values"] and country_id in data["values"][indicator_id]:
             years_data = data["values"][indicator_id][country_id]
-            # Converte os dados em DataFrame
             df = pd.DataFrame(years_data.items(), columns=['year', 'value'])
             df['year'] = pd.to_numeric(df['year'])
             return df
@@ -53,37 +51,29 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
 st.sidebar.header("Configurações de Pesquisa")
 countries = get_countries()
 country_id = st.sidebar.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
-
 indicators = get_indicators()
 indicator_id = st.sidebar.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
-
 start_year = st.sidebar.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
 end_year = st.sidebar.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
 
 # Obter dados automaticamente ao mudar as seleções
 df = get_indicator_data(country_id, indicator_id, start_year, end_year)
 if not df.empty:
-    # Filtra os dados conforme o intervalo de anos selecionado
     df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
     if not df_filtered.empty:
-        # Cria gráfico com Plotly
         fig = px.line(df_filtered, x='year', y='value', title=f"{indicators[indicator_id]} de {countries[country_id]}",
                       markers=True, line_shape='linear', template='plotly_dark')
         
-        # Adiciona cor forte à linha do gráfico
         color_map = px.colors.qualitative.Plotly
         fig.update_traces(line=dict(color=color_map[np.random.randint(0, len(color_map))], width=3))
                           )
         fig.update_layout(xaxis_title='Ano', yaxis_title='Valor', title_x=0.5)
 
-        # Plota o gráfico
         st.plotly_chart(fig)
 
-        # Exibe a URL abaixo do gráfico
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
         st.markdown(f"**Dados disponíveis em:** [API URL]({url})")
 
-        # Botão para download do CSV
         csv = df_filtered.to_csv(index=False)
         st.download_button(
             label="Baixar dados como CSV",
