@@ -57,10 +57,10 @@ country_ids = st.sidebar.multiselect(
     format_func=lambda x: countries[x],
 )
 
-# Verifica se o número de países selecionados é maior que 10
+# Limita a seleção a 10 países
 if len(country_ids) > 10:
     st.warning("Por favor, selecione no máximo 10 países.")
-    country_ids = country_ids[:10]  # Limita a seleção a 10 países
+    country_ids = country_ids[:10]
 
 indicators = get_indicators()
 indicator_id = st.sidebar.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
