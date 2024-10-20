@@ -32,18 +32,18 @@ def get_indicator_data(country_ids, indicator_id, start_year, end_year):
     """Obter dados de um indicador específico para um ou mais países do FMI."""
     try:
         dfs = []  # Lista para armazenar DataFrames de todos os países
-        for cid in country_ids:
-            url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{cid}/{start_year}/{end_year}"
+        for country_id in country_ids:
+            url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
             response = requests.get(url)
             data = response.json()
 
             # Verifica se os dados estão presentes
-            if "values" in data and indicator_id in data["values"] and cid in data["values"][indicator_id]:
-                years_data = data["values"][indicator_id][cid]
+            if "values" in data and indicator_id in data["values"] and country_id in data["values"][indicator_id]:
+                years_data = data["values"][indicator_id][country_id]
                 # Converte os dados em DataFrame
                 df = pd.DataFrame(years_data.items(), columns=['year', 'value'])
                 df['year'] = pd.to_numeric(df['year'])
-                df['country'] = countries[cid]  # Adiciona a coluna de país
+                df['country'] = countries[country_id]  # Adiciona a coluna de país
                 dfs.append(df)
         return pd.concat(dfs) if dfs else pd.DataFrame()  # Retorna um DataFrame concatenado
     except Exception as e:
@@ -70,7 +70,7 @@ if country_ids:
         if not df_filtered.empty:
             # Plota o gráfico interativo
             fig = px.line(df_filtered, x='year', y='value', color='country',
-                          title=f"{indicators[indicator_id]} para os países selecionados",
+                          title=f"{indicators[indicator_id]}",
                           labels={'value': indicators[indicator_id], 'year': 'Ano'},
                           markers=True)
             fig.update_traces(line=dict(width=2), marker=dict(size=5))
@@ -86,12 +86,12 @@ if country_ids:
             st.download_button(
                 label="Baixar dados como CSV",
                 data=csv,
-                file_name=f"{'_'.join([countries[cid].replace(' ', '_') for cid in country_ids])}_{indicators[indicator_id].replace(' ', '_')}.csv",
+                file_name=f"{','.join(countries[cid] for cid in country_ids)}_{indicators[indicator_id]}.csv",
                 mime="text/csv",
             )
         else:
             st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
     else:
-        st.error("Erro ao obter dados para os países selecionados.")
+        st.warning("Nenhum dado disponível para os países selecionados.")
 else:
-    st.warning("Por favor, selecione pelo menos um país.")
+    st.info("Por favor, selecione pelo menos um país para visualizar os dados.")
