@@ -1,151 +1,82 @@
 import streamlit as st
 import pandas as pd
+import wbgapi as wb
 import math
-from pathlib import Path
 
-# Set the title and favicon that appear in the Browser's tab bar.
+# Configuração da página
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title='World Bank Dashboard',
+    page_icon=':earth_americas:',
 )
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
-
+# Função para obter dados do Banco Mundial
 @st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+def get_indicator_data(indicator, start_year, end_year):
+    """Obter dados de um indicador específico do Banco Mundial."""
+    data = wb.data.get_dataframe(indicator, mdb=True, time=(start_year, end_year))
+    data.reset_index(inplace=True)
+    return data
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
-
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
-
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
-
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
-
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
-
-    return gdp_df
-
-gdp_df = get_gdp_data()
-
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
+# Sidebar para seleção de indicadores
+st.sidebar.header('Select Indicator Category')
+indicator_category = st.sidebar.selectbox(
+    'Choose a category',
+    ['Economic Indicators', 'Social Indicators', 'Political Indicators']
 )
 
-''
-''
+indicators = {
+    'Economic Indicators': {
+        'GDP (current US$)': 'NY.GDP.MKTP.CD',
+        'Exchange Rate (LCU per US$, period average)': 'PA.NUS.FCRF',
+        # Adicione mais indicadores econômicos aqui
+    },
+    'Social Indicators': {
+        'Poverty Headcount Ratio at $1.90 a Day': 'SI.POV.DDAY',
+        'Literacy Rate': 'SE.ADT.LITR.ZS',
+        # Adicione mais indicadores sociais aqui
+    },
+    'Political Indicators': {
+        'Government Effectiveness': 'NY.GDP.PCAP.CD',
+        'Voice and Accountability': 'NY.GDP.MKTP.CD',
+        # Adicione mais indicadores políticos aqui
+    },
+}
 
+selected_indicator = st.sidebar.selectbox(
+    'Select an indicator',
+    list(indicators[indicator_category].keys())
+)
 
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
+# Definindo o intervalo de anos
+min_year = 1960
+max_year = 2022
+from_year, to_year = st.sidebar.slider(
+    'Select the year range',
+    min_value=min_year,
+    max_value=max_year,
+    value=[min_year, max_year]
+)
 
-st.header(f'GDP in {to_year}', divider='gray')
+# Obtendo os dados do indicador selecionado
+indicator_code = indicators[indicator_category][selected_indicator]
+data_df = get_indicator_data(indicator_code, from_year, to_year)
 
-''
+# Filtrando os dados
+st.header(f'{selected_indicator} Over Time')
+st.line_chart(data_df.set_index('year'))
 
-cols = st.columns(4)
+# Mostrando dados de alguns países
+st.header(f'{selected_indicator} in Selected Countries')
+selected_countries = st.multiselect(
+    'Choose countries to display',
+    data_df['country'].unique()
+)
 
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+# Filtrando os dados para os países selecionados
+if selected_countries:
+    filtered_data = data_df[data_df['country'].isin(selected_countries)]
+    for country in selected_countries:
+        country_data = filtered_data[filtered_data['country'] == country]
+        st.line_chart(country_data.set_index('year'))
+else:
+    st.warning("Select at least one country to view data.")
