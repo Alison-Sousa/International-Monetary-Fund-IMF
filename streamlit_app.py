@@ -62,18 +62,17 @@ if st.button("Obter Dados"):
     if df.empty:
         st.error("Não foram encontrados dados para o país e indicador selecionados ou nenhum dado disponível para o intervalo de anos selecionado.")
     else:
-        st.session_state.df = df  # Armazena os dados em session_state para uso posterior
         st.success("Dados obtidos com sucesso!")
 
 # Exibição de gráficos e download
 if 'df' in st.session_state:
     st.subheader(f"Gráfico para {countries[country_id]} - {indicators[indicator_id]}")
-    st.line_chart(st.session_state.df.set_index('year'))
+    st.line_chart(df.set_index('year'))
     
     # Download de dados
     st.download_button(
         label="Baixar Dados em CSV",
-        data=st.session_state.df.to_csv(index=False),
+        data=df.to_csv(index=False),
         file_name="indicadores_economicos.csv",
         mime="text/csv"
     )
