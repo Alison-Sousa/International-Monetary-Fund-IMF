@@ -91,5 +91,7 @@ if country_ids:
             )
         else:
             st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
+    else:
+        st.error("Erro ao obter dados para os países selecionados.")
 else:
     st.warning("Por favor, selecione pelo menos um país.")
