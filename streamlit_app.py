@@ -6,6 +6,9 @@ import plotly.express as px
 # Título do aplicativo
 st.title("Dashboard de Indicadores Econômicos do FMI")
 
+# Adiciona a imagem logo.svg na sidebar
+st.sidebar.image("logo.svg", use_column_width=True)
+
 # Função para obter a lista de países
 @st.cache_data
 def get_countries():
