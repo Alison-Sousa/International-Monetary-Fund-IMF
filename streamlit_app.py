@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import wbgapi as wb
+import requests
 
 # Configuração da página
 st.set_page_config(
@@ -13,9 +13,10 @@ st.set_page_config(
 def get_all_indicators():
     """Obter todos os indicadores do Banco Mundial."""
     try:
-        # Tentando buscar os indicadores
-        indicators = wb.search('')  # Obtém todos os indicadores
-        return indicators[['id', 'name']]
+        url = "https://api.worldbank.org/v2/indicator?format=json"
+        response = requests.get(url)
+        indicators = response.json()[1]  # A segunda parte da resposta contém os dados
+        return pd.DataFrame(indicators)[['id', 'name']]
     except Exception as e:
         st.error(f"Erro ao obter indicadores: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
@@ -25,8 +26,10 @@ def get_all_indicators():
 def get_indicator_data(indicator, start_year, end_year):
     """Obter dados de um indicador específico do Banco Mundial."""
     try:
-        data = wb.data.get(indicator, time=(start_year, end_year))
-        return data
+        url = f"https://api.worldbank.org/v2/country/all/indicator/{indicator}?date={start_year}:{end_year}&format=json"
+        response = requests.get(url)
+        data = response.json()[1]  # A segunda parte da resposta contém os dados
+        return pd.DataFrame(data)
     except Exception as e:
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
@@ -63,7 +66,8 @@ else:
     if not data_df.empty:
         # Filtrando os dados
         st.header(f'{indicator_options[selected_indicator]} Over Time')
-        st.line_chart(data_df.set_index('date'))
+        data_df['date'] = pd.to_datetime(data_df['date'], format='%Y')
+        st.line_chart(data_df.set_index('date')['value'])
 
         # Mostrando dados de alguns países
         st.header(f'{indicator_options[selected_indicator]} in Selected Countries')
@@ -78,7 +82,7 @@ else:
             filtered_data = data_df[data_df['country'].isin(selected_countries)]
             for country in selected_countries:
                 country_data = filtered_data[filtered_data['country'] == country]
-                st.line_chart(country_data.set_index('date'))
+                st.line_chart(country_data.set_index('date')['value'])
         else:
             st.warning("Select at least one country to view data.")
     else:
