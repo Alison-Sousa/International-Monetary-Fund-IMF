@@ -62,28 +62,36 @@ else:
     # Obtendo os dados do indicador selecionado
     data_df = get_indicator_data(selected_indicator, from_year, to_year)
 
-    # Verificando se o DataFrame não está vazio e se contém a coluna 'country'
-    if not data_df.empty and 'country' in data_df.columns:
-        # Filtrando os dados
-        st.header(f'{indicator_options[selected_indicator]} Over Time')
-        data_df['date'] = pd.to_datetime(data_df['date'], format='%Y')
-        st.line_chart(data_df.set_index('date')['value'])
+    # Verificando se o DataFrame não está vazio
+    if not data_df.empty:
+        # Exibindo a estrutura dos dados para depuração
+        st.write("DataFrame structure:")
+        st.write(data_df)
 
-        # Mostrando dados de alguns países
-        st.header(f'{indicator_options[selected_indicator]} in Selected Countries')
-        countries = data_df['country'].unique()
-        selected_countries = st.multiselect(
-            'Choose countries to display',
-            countries
-        )
+        # Verificando se as colunas necessárias estão presentes
+        if 'country' in data_df.columns and 'date' in data_df.columns and 'value' in data_df.columns:
+            # Filtrando os dados
+            st.header(f'{indicator_options[selected_indicator]} Over Time')
+            data_df['date'] = pd.to_datetime(data_df['date'], format='%Y')
+            st.line_chart(data_df.set_index('date')['value'])
 
-        # Filtrando os dados para os países selecionados
-        if selected_countries:
-            filtered_data = data_df[data_df['country'].isin(selected_countries)]
-            for country in selected_countries:
-                country_data = filtered_data[filtered_data['country'] == country]
-                st.line_chart(country_data.set_index('date')['value'])
+            # Mostrando dados de alguns países
+            st.header(f'{indicator_options[selected_indicator]} in Selected Countries')
+            countries = data_df['country'].unique()
+            selected_countries = st.multiselect(
+                'Choose countries to display',
+                countries
+            )
+
+            # Filtrando os dados para os países selecionados
+            if selected_countries:
+                filtered_data = data_df[data_df['country'].isin(selected_countries)]
+                for country in selected_countries:
+                    country_data = filtered_data[filtered_data['country'] == country]
+                    st.line_chart(country_data.set_index('date')['value'])
+            else:
+                st.warning("Select at least one country to view data.")
         else:
-            st.warning("Select at least one country to view data.")
+            st.warning("Missing expected columns in the data.")
     else:
-        st.warning("No data available for the selected indicator and year range or 'country' column is missing.")
+        st.warning("No data available for the selected indicator and year range.")
