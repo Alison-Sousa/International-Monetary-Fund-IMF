@@ -52,17 +52,16 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
 st.sidebar.header("Configurações de Pesquisa")
 countries = get_countries()
 
-# Usando multiselect para selecionar múltiplos países
-country_ids = st.sidebar.multiselect(
-    "Selecione até 10 Países:",
-    options=list(countries.keys()),
-    format_func=lambda x: countries[x],
-)
+# Usando checkboxes para selecionar múltiplos países
+selected_countries = []
+for country_id, country_name in countries.items():
+    if st.sidebar.checkbox(country_name, value=False):
+        selected_countries.append(country_id)
 
 # Limita a seleção a 10 países
-if len(country_ids) > 10:
+if len(selected_countries) > 10:
     st.warning("Por favor, selecione no máximo 10 países.")
-    country_ids = country_ids[:10]
+    selected_countries = selected_countries[:10]
 
 indicators = get_indicators()
 indicator_id = st.sidebar.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
@@ -71,10 +70,10 @@ start_year = st.sidebar.number_input("Ano de Início:", value=2000, min_value=19
 end_year = st.sidebar.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
 
 # Obter dados automaticamente ao mudar as seleções
-if country_ids:
+if selected_countries and indicator_id:
     all_data = pd.DataFrame()
 
-    for country_id in country_ids:
+    for country_id in selected_countries:
         df = get_indicator_data(country_id, indicator_id, start_year, end_year)
         if not df.empty:
             df['country'] = countries[country_id]  # Adiciona coluna com o nome do país
@@ -93,7 +92,7 @@ if country_ids:
             st.plotly_chart(fig)
 
             # Exibe a URL abaixo do gráfico
-            url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{','.join(country_ids)}/{start_year}/{end_year}"
+            url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{','.join(selected_countries)}/{start_year}/{end_year}"
             st.markdown(f"**Dados disponíveis em:** [API URL]({url})")
 
             # Botão para download do CSV
@@ -109,4 +108,4 @@ if country_ids:
     else:
         st.warning("Nenhum dado disponível para os países selecionados.")
 else:
-    st.warning("Selecione pelo menos um país para visualizar os dados.")
+    st.warning("Selecione pelo menos um país e um indicador para visualizar os dados.")
