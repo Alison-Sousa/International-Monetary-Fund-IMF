@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 import pandas as pd
+import plotly.express as px
+import numpy as np
 
 # Título do aplicativo
 st.title("Dashboard de Indicadores Econômicos do FMI")
@@ -64,8 +66,18 @@ if not df.empty:
     # Filtra os dados conforme o intervalo de anos selecionado
     df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
     if not df_filtered.empty:
+        # Cria gráfico com Plotly
+        fig = px.line(df_filtered, x='year', y='value', title=f"{indicators[indicator_id]} de {countries[country_id]}",
+                      markers=True, line_shape='linear', template='plotly_dark')
+        
+        # Adiciona cor forte à linha do gráfico
+        color_map = px.colors.qualitative.Plotly
+        fig.update_traces(line=dict(color=color_map[np.random.randint(0, len(color_map))], width=3))
+                          )
+        fig.update_layout(xaxis_title='Ano', yaxis_title='Valor', title_x=0.5)
+
         # Plota o gráfico
-        st.line_chart(df_filtered.set_index('year'))
+        st.plotly_chart(fig)
 
         # Exibe a URL abaixo do gráfico
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
