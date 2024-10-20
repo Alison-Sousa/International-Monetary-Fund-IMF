@@ -31,12 +31,8 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Obter dados de um indicador específico para um país do FMI."""
     try:
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
-        st.write(f"Solicitando dados da URL: {url}")  # Mostra a URL solicitada
         response = requests.get(url)
         data = response.json()
-        
-        # Mostra a resposta da API para depuração
-        st.write("Resposta da API:", data)
 
         # Verifica se os dados estão presentes
         if "values" in data and indicator_id in data["values"] and country_id in data["values"][indicator_id]:
@@ -46,8 +42,7 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
             df['year'] = pd.to_numeric(df['year'])
             return df
         else:
-            st.warning("Nenhum dado disponível para o país e indicador selecionados no intervalo de anos.")
-            return pd.DataFrame()
+            return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
     except Exception as e:
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()
@@ -70,7 +65,12 @@ if st.sidebar.button("Obter Dados"):
         # Filtra os dados conforme o intervalo de anos selecionado
         df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
         if not df_filtered.empty:
+            # Plota o gráfico
             st.line_chart(df_filtered.set_index('year'))
+
+            # Exibe a URL abaixo do gráfico
+            url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
+            st.markdown(f"**Dados disponíveis em:** [API URL]({url})")
 
             # Botão para download do CSV
             csv = df_filtered.to_csv(index=False)
