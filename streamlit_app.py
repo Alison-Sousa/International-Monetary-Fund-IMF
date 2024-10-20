@@ -72,7 +72,6 @@ end_year = st.sidebar.number_input("Ano de Fim:", value=2024, min_value=1900, ma
 
 # Obter dados automaticamente ao mudar as seleções
 if country_ids:
-    # Cria um DataFrame para armazenar os dados de todos os países
     all_data = pd.DataFrame()
 
     for country_id in country_ids:
@@ -82,7 +81,6 @@ if country_ids:
             all_data = pd.concat([all_data, df], ignore_index=True)
 
     if not all_data.empty:
-        # Filtra os dados conforme o intervalo de anos selecionado
         df_filtered = all_data[(all_data['year'] >= start_year) & (all_data['year'] <= end_year)]
         if not df_filtered.empty:
             # Plota o gráfico interativo
