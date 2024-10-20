@@ -62,8 +62,8 @@ else:
     # Obtendo os dados do indicador selecionado
     data_df = get_indicator_data(selected_indicator, from_year, to_year)
 
-    # Verificando se o DataFrame não está vazio e se a coluna 'country' existe
-    if not data_df.empty:
+    # Verificando se o DataFrame não está vazio e se contém a coluna 'country'
+    if not data_df.empty and 'country' in data_df.columns:
         # Filtrando os dados
         st.header(f'{indicator_options[selected_indicator]} Over Time')
         data_df['date'] = pd.to_datetime(data_df['date'], format='%Y')
@@ -86,4 +86,4 @@ else:
         else:
             st.warning("Select at least one country to view data.")
     else:
-        st.warning("No data available for the selected indicator and year range.")
+        st.warning("No data available for the selected indicator and year range or 'country' column is missing.")
