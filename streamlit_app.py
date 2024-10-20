@@ -17,17 +17,13 @@ def get_countries():
         response = requests.get(url)
         data = response.json()
         
-        # Verifica se a resposta contém dados
         if len(data) < 2:
             st.error("Não foram encontrados países.")
-            return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
+            return pd.DataFrame()
 
         countries = data[1]  # A segunda parte da resposta contém os dados
 
-        # Criar uma lista para armazenar os países
         country_list = []
-
-        # Extrair os dados dos países
         for country in countries:
             country_list.append({
                 'id': country['id'],
@@ -37,9 +33,9 @@ def get_countries():
         return pd.DataFrame(country_list)
     except Exception as e:
         st.error(f"Erro ao obter países: {e}")
-        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+        return pd.DataFrame()
 
-# Função para obter indicadores disponíveis
+# Função para obter todos os indicadores
 @st.cache_data
 def get_indicators():
     """Obter lista de indicadores do Banco Mundial."""
@@ -48,17 +44,13 @@ def get_indicators():
         response = requests.get(url)
         data = response.json()
 
-        # Verifica se a resposta contém dados
         if len(data) < 2:
             st.error("Não foram encontrados indicadores.")
-            return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
+            return pd.DataFrame()
 
         indicators = data[1]  # A segunda parte da resposta contém os dados
 
-        # Criar uma lista para armazenar os indicadores
         indicator_list = []
-
-        # Extrair os dados dos indicadores
         for indicator in indicators:
             indicator_list.append({
                 'id': indicator['id'],
@@ -68,7 +60,7 @@ def get_indicators():
         return pd.DataFrame(indicator_list)
     except Exception as e:
         st.error(f"Erro ao obter indicadores: {e}")
-        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+        return pd.DataFrame()
 
 # Função para obter dados do Banco Mundial
 @st.cache_data
@@ -79,20 +71,18 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         response = requests.get(url)
         data = response.json()
         
-        # Verifica se a resposta contém dados
         if len(data) < 2:
             st.error("Não foram encontrados dados para o país e indicador selecionados.")
-            return pd.DataFrame()  # Retorna um DataFrame vazio se não houver dados
+            return pd.DataFrame()
 
         df = pd.DataFrame(data[1])  # A segunda parte da resposta contém os dados
-        # Processar as colunas de interesse
         df['indicator'] = df['indicator'].apply(lambda x: x['value'])  # Extrair o nome do indicador
         df['country'] = df['country'].apply(lambda x: x['value'])      # Extrair o nome do país
         df.rename(columns={'date': 'year', 'value': 'value'}, inplace=True)
         return df[['indicator', 'country', 'year', 'value']]
     except Exception as e:
         st.error(f"Erro ao obter dados: {e}")
-        return pd.DataFrame()  # Retorna um DataFrame vazio em caso de erro
+        return pd.DataFrame()
 
 # Sidebar para seleção de país e indicador
 st.sidebar.header('Filtrar por País e Indicador')
@@ -106,7 +96,7 @@ else:
     selected_country = st.sidebar.selectbox(
         'Escolha um país',
         list(country_options.keys()),
-        format_func=lambda x: country_options[x]  # Para mostrar o nome do país
+        format_func=lambda x: country_options[x]
     )
 
 if indicators.empty:
@@ -116,7 +106,7 @@ else:
     selected_indicator = st.sidebar.selectbox(
         'Escolha um indicador',
         list(indicator_options.keys()),
-        format_func=lambda x: indicator_options[x]  # Para mostrar o nome do indicador
+        format_func=lambda x: indicator_options[x]
     )
 
     # Definindo o intervalo de anos
@@ -134,7 +124,7 @@ else:
 
     # Verificando se o DataFrame não está vazio
     if not data_df.empty:
-        st.header(f'{indicator_options[selected_indicator]} para {country_options[selected_country]} ao longo do tempo')
+        st.header(f'Dados de {indicator_options[selected_indicator]} para {country_options[selected_country]} ao longo do tempo')
         data_df['year'] = pd.to_datetime(data_df['year'], format='%Y')
         st.line_chart(data_df.set_index('year')['value'])
     else:
