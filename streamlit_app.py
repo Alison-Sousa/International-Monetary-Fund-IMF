@@ -1,6 +1,9 @@
 import streamlit as st
 import requests
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
 
 # Título do aplicativo
 st.title("Dashboard de Indicadores Econômicos do FMI")
@@ -65,7 +68,21 @@ if not df.empty:
     df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
     if not df_filtered.empty:
         # Plota o gráfico
-        st.line_chart(df_filtered.set_index('year'))
+        plt.figure(figsize=(10, 5))
+        sns.set(style="whitegrid")
+
+        # Define uma cor diferente para cada indicador
+        color_palette = sns.color_palette("husl", len(indicators))
+        color = color_palette[list(indicators.keys()).index(indicator_id)]
+
+        plt.plot(df_filtered['year'], df_filtered['value'], color=color, linewidth=2.5, marker='o')
+        plt.title(f"{indicators[indicator_id]} em {countries[country_id]}", fontsize=16)
+        plt.xlabel("Ano", fontsize=14)
+        plt.ylabel(indicators[indicator_id], fontsize=14)
+        plt.xticks(df_filtered['year'], rotation=45)
+        plt.grid(False)  # Remove a grade
+        plt.tight_layout()
+        st.pyplot(plt)
 
         # Exibe a URL abaixo do gráfico
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
