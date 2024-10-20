@@ -67,7 +67,7 @@ countries = get_countries()
 
 # Verifica se a lista de países foi carregada corretamente
 if countries:
-    country_ids = st.sidebar.multiselect("Selecione um ou mais Países:", options=list(countries.keys()), format_func=lambda x: countries[x])
+    country_ids = st.sidebar.multiselect("Selecione um ou mais Países:", options=list(countries.keys()), format_func=lambda x: countries.get(x, x))
 else:
     st.error("Não foi possível carregar a lista de países.")
 
