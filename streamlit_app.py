@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import plotly.express as px
 
 # Título do aplicativo
 st.title("Dashboard de Indicadores Econômicos do FMI")
@@ -35,7 +34,7 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         st.write(f"Solicitando dados da URL: {url}")  # Mostra a URL solicitada
         response = requests.get(url)
         data = response.json()
-        
+
         st.write("Resposta da API:", data)  # Mostra a resposta da API
 
         if not data or 'data' not in data:
@@ -64,7 +63,7 @@ end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=
 # Botão para obter dados
 if st.button("Obter Dados"):
     all_data = []
-    
+
     for country_id in selected_countries:
         for indicator_id in selected_indicators:
             df = get_indicator_data(country_id, indicator_id, start_year, end_year)
@@ -72,13 +71,13 @@ if st.button("Obter Dados"):
                 df['country'] = countries[country_id]  # Adiciona nome do país
                 df['indicator'] = indicators[indicator_id]  # Adiciona nome do indicador
                 all_data.append(df)
-    
+
     if all_data:
         combined_df = pd.concat(all_data)
         
-        # Gráfico 3D (se necessário)
-        fig = px.line(combined_df, x='year', y='value', color='country', title="Indicadores Econômicos do FMI")
-        st.plotly_chart(fig)
+        # Mostra os dados em uma tabela
+        st.write("Dados Obtidos:")
+        st.dataframe(combined_df)
 
         # Download de dados
         st.download_button(
