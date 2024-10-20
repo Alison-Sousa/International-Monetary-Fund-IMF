@@ -51,6 +51,8 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
 # Sidebar para seleção de países, indicadores e anos
 st.sidebar.header("Configurações de Pesquisa")
 countries = get_countries()
+
+# Usando multiselect para selecionar múltiplos países
 country_ids = st.sidebar.multiselect(
     "Selecione até 10 Países:",
     options=list(countries.keys()),
