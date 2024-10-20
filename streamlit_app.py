@@ -56,7 +56,8 @@ country_input = st.sidebar.text_input("Digite o Nome do País:")
 # Busca o país correspondente
 country_id = None
 for key, value in countries.items():
-    if value.lower() == country_input.lower():
+    # Verifica se value é uma string antes de chamar lower()
+    if isinstance(value, str) and value.lower() == country_input.lower():
         country_id = key
         break
 
