@@ -71,5 +71,14 @@ if st.sidebar.button("Obter Dados"):
         df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
         if not df_filtered.empty:
             st.line_chart(df_filtered.set_index('year'))
+
+            # Botão para download do CSV
+            csv = df_filtered.to_csv(index=False)
+            st.download_button(
+                label="Baixar dados como CSV",
+                data=csv,
+                file_name=f"{countries[country_id]}_{indicators[indicator_id]}.csv",
+                mime="text/csv",
+            )
         else:
             st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
