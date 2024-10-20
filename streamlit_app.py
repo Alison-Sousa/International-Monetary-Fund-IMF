@@ -28,11 +28,11 @@ def get_indicators():
 
 # Função para obter dados do FMI
 @st.cache_data
-def get_indicator_data(country_id, indicator_id, start_year, end_year):
+def get_indicator_data(country_ids, indicator_id, start_year, end_year):
     """Obter dados de um indicador específico para um ou mais países do FMI."""
     try:
         dfs = []  # Lista para armazenar DataFrames de todos os países
-        for cid in country_id:
+        for cid in country_ids:
             url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{cid}/{start_year}/{end_year}"
             response = requests.get(url)
             data = response.json()
