@@ -64,7 +64,12 @@ indicators = get_indicators()
 indicator_id = st.sidebar.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
 
 countries = get_countries()
-country_ids = st.sidebar.multiselect("Selecione um ou mais Países:", options=list(countries.keys()), format_func=lambda x: countries[x])
+
+# Verifica se a lista de países foi carregada corretamente
+if countries:
+    country_ids = st.sidebar.multiselect("Selecione um ou mais Países:", options=list(countries.keys()), format_func=lambda x: countries[x])
+else:
+    st.error("Não foi possível carregar a lista de países.")
 
 start_year = st.sidebar.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
 end_year = st.sidebar.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
