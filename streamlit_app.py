@@ -34,13 +34,13 @@ st.sidebar.header("Selecione os Parâmetros")
 selected_countries = st.sidebar.multiselect(
     "Selecione Países:",
     options=list(country_options.keys()),
-    format_func=lambda x: country_options[x]  # Formatação das opções
+    format_func=lambda x: country_options.get(x, x)  # Usar get para evitar KeyError
 )
 
 selected_indicators = st.sidebar.multiselect(
     "Selecione Indicadores:",
     options=list(indicator_options.keys()),
-    format_func=lambda x: indicator_options[x]  # Formatação das opções
+    format_func=lambda x: indicator_options.get(x, x)  # Usar get para evitar KeyError
 )
 
 # Seleção de anos
