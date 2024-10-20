@@ -1,9 +1,7 @@
 import streamlit as st
 import requests
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
+import plotly.express as px
 
 # Título do aplicativo
 st.title("Dashboard de Indicadores Econômicos do FMI")
@@ -67,22 +65,14 @@ if not df.empty:
     # Filtra os dados conforme o intervalo de anos selecionado
     df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
     if not df_filtered.empty:
-        # Plota o gráfico
-        plt.figure(figsize=(10, 5))
-        sns.set(style="whitegrid")
-
-        # Define uma cor diferente para cada indicador
-        color_palette = sns.color_palette("husl", len(indicators))
-        color = color_palette[list(indicators.keys()).index(indicator_id)]
-
-        plt.plot(df_filtered['year'], df_filtered['value'], color=color, linewidth=2.5, marker='o')
-        plt.title(f"{indicators[indicator_id]} em {countries[country_id]}", fontsize=16)
-        plt.xlabel("Ano", fontsize=14)
-        plt.ylabel(indicators[indicator_id], fontsize=14)
-        plt.xticks(df_filtered['year'], rotation=45)
-        plt.grid(False)  # Remove a grade
-        plt.tight_layout()
-        st.pyplot(plt)
+        # Plota o gráfico interativo
+        fig = px.line(df_filtered, x='year', y='value', 
+                      title=f"{indicators[indicator_id]} em {countries[country_id]}",
+                      labels={'value': indicators[indicator_id], 'year': 'Ano'},
+                      markers=True)
+        fig.update_traces(line=dict(width=2), marker=dict(size=5))
+        fig.update_layout(hovermode='x unified', showlegend=False)
+        st.plotly_chart(fig)
 
         # Exibe a URL abaixo do gráfico
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
