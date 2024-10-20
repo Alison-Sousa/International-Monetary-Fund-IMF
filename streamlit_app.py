@@ -29,8 +29,19 @@ indicators = get_indicators()
 country_options = {code: data["label"] for code, data in countries.items()}
 indicator_options = {code: data["label"] for code, data in indicators.items()}
 
-selected_countries = st.sidebar.multiselect("Selecione Países:", options=list(country_options.keys()), format_func=lambda x: country_options[x])
-selected_indicators = st.sidebar.multiselect("Selecione Indicadores:", options=list(indicator_options.keys()), format_func=lambda x: indicator_options[x])
+# Verifica se country_options e indicator_options estão corretamente formados
+st.sidebar.header("Selecione os Parâmetros")
+selected_countries = st.sidebar.multiselect(
+    "Selecione Países:",
+    options=list(country_options.keys()),
+    format_func=lambda x: country_options[x]
+)
+
+selected_indicators = st.sidebar.multiselect(
+    "Selecione Indicadores:",
+    options=list(indicator_options.keys()),
+    format_func=lambda x: indicator_options[x]
+)
 
 # Seleção de anos
 start_year = st.sidebar.number_input("Ano de Início", min_value=2000, max_value=2024, value=2000)
@@ -42,6 +53,8 @@ if selected_countries and selected_indicators:
         for indicator in selected_indicators:
             try:
                 data = get_data(country, indicator, start_year, end_year)
+                
+                # Formata os dados em um DataFrame
                 df = pd.DataFrame(data.items(), columns=["Ano", "Valor"])
                 df["Ano"] = df["Ano"].astype(int)
                 
@@ -50,7 +63,12 @@ if selected_countries and selected_indicators:
                 st.plotly_chart(fig)
                 
                 # Download de dados
-                st.download_button(label="Baixar Dados em CSV", data=df.to_csv(index=False), file_name=f"{country_options[country]}_{indicator_options[indicator]}.csv", mime="text/csv")
+                st.download_button(
+                    label="Baixar Dados em CSV",
+                    data=df.to_csv(index=False),
+                    file_name=f"{country_options[country]}_{indicator_options[indicator]}.csv",
+                    mime="text/csv"
+                )
                 
             except Exception as e:
                 st.error(f"Erro ao obter dados para {country_options[country]} e {indicator_options[indicator]}: {e}")
