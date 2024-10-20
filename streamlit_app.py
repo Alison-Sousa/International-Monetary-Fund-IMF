@@ -51,7 +51,12 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
 # Sidebar para seleção de países, indicadores e anos
 st.sidebar.header("Configurações de Pesquisa")
 countries = get_countries()
-country_id = st.sidebar.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
+country_ids = st.sidebar.multiselect(
+    "Selecione até 10 Países:",
+    options=list(countries.keys()),
+    format_func=lambda x: countries[x],
+    max_selections=10
+)
 
 indicators = get_indicators()
 indicator_id = st.sidebar.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
@@ -60,31 +65,44 @@ start_year = st.sidebar.number_input("Ano de Início:", value=2000, min_value=19
 end_year = st.sidebar.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
 
 # Obter dados automaticamente ao mudar as seleções
-df = get_indicator_data(country_id, indicator_id, start_year, end_year)
-if not df.empty:
-    # Filtra os dados conforme o intervalo de anos selecionado
-    df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
-    if not df_filtered.empty:
-        # Plota o gráfico interativo
-        fig = px.line(df_filtered, x='year', y='value', 
-                      title=f"{indicators[indicator_id]} em {countries[country_id]}",
-                      labels={'value': indicators[indicator_id], 'year': 'Ano'},
-                      markers=True)
-        fig.update_traces(line=dict(width=2), marker=dict(size=5))
-        fig.update_layout(hovermode='x unified', showlegend=False)
-        st.plotly_chart(fig)
+if country_ids:
+    # Cria um DataFrame para armazenar os dados de todos os países
+    all_data = pd.DataFrame()
 
-        # Exibe a URL abaixo do gráfico
-        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
-        st.markdown(f"**Dados disponíveis em:** [API URL]({url})")
+    for country_id in country_ids:
+        df = get_indicator_data(country_id, indicator_id, start_year, end_year)
+        if not df.empty:
+            df['country'] = countries[country_id]  # Adiciona coluna com o nome do país
+            all_data = pd.concat([all_data, df], ignore_index=True)
 
-        # Botão para download do CSV
-        csv = df_filtered.to_csv(index=False)
-        st.download_button(
-            label="Baixar dados como CSV",
-            data=csv,
-            file_name=f"{countries[country_id]}_{indicators[indicator_id]}.csv",
-            mime="text/csv",
-        )
+    if not all_data.empty:
+        # Filtra os dados conforme o intervalo de anos selecionado
+        df_filtered = all_data[(all_data['year'] >= start_year) & (all_data['year'] <= end_year)]
+        if not df_filtered.empty:
+            # Plota o gráfico interativo
+            fig = px.line(df_filtered, x='year', y='value', color='country',
+                          title=f"{indicators[indicator_id]} de Países Selecionados",
+                          labels={'value': indicators[indicator_id], 'year': 'Ano'},
+                          markers=True)
+            fig.update_traces(line=dict(width=2), marker=dict(size=5))
+            fig.update_layout(hovermode='x unified')
+            st.plotly_chart(fig)
+
+            # Exibe a URL abaixo do gráfico
+            url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{','.join(country_ids)}/{start_year}/{end_year}"
+            st.markdown(f"**Dados disponíveis em:** [API URL]({url})")
+
+            # Botão para download do CSV
+            csv = df_filtered.to_csv(index=False)
+            st.download_button(
+                label="Baixar dados como CSV",
+                data=csv,
+                file_name=f"Comparacao_{indicators[indicator_id]}.csv",
+                mime="text/csv",
+            )
+        else:
+            st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
     else:
-        st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
+        st.warning("Nenhum dado disponível para os países selecionados.")
+else:
+    st.warning("Selecione pelo menos um país para visualizar os dados.")
