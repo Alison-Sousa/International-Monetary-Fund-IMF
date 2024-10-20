@@ -17,11 +17,13 @@ def get_countries():
         response = requests.get(url)
         countries = response.json()
         
-        if not countries:
-            st.error("Não foram encontrados países.")
+        # Verificando se a resposta contém dados
+        if 'countries' in countries:
+            return pd.DataFrame(countries['countries'])
+        else:
+            st.error("Não foram encontrados países. Verifique a resposta da API.")
             return pd.DataFrame()
 
-        return pd.DataFrame(countries)
     except Exception as e:
         st.error(f"Erro ao obter países: {e}")
         return pd.DataFrame()
@@ -35,11 +37,13 @@ def get_indicators():
         response = requests.get(url)
         indicators = response.json()
         
-        if not indicators:
-            st.error("Não foram encontrados indicadores.")
+        # Verificando se a resposta contém dados
+        if 'indicators' in indicators:
+            return pd.DataFrame(indicators['indicators'])
+        else:
+            st.error("Não foram encontrados indicadores. Verifique a resposta da API.")
             return pd.DataFrame()
 
-        return pd.DataFrame(indicators)
     except Exception as e:
         st.error(f"Erro ao obter indicadores: {e}")
         return pd.DataFrame()
@@ -72,40 +76,59 @@ indicators = get_indicators()
 if countries.empty:
     st.warning("Nenhum país disponível.")
 else:
-    country_options = countries.set_index('id')['name'].to_dict()
-    selected_country = st.sidebar.selectbox(
-        'Escolha um país',
-        list(country_options.keys()),
-        format_func=lambda x: country_options[x]
-    )
+    try:
+        # Ajustando a verificação de colunas
+        if 'id' in countries.columns and 'name' in countries.columns:
+            country_options = countries.set_index('id')['name'].to_dict()
+            selected_country = st.sidebar.selectbox(
+                'Escolha um país',
+                list(country_options.keys()),
+                format_func=lambda x: country_options[x]
+            )
+        else:
+            st.error("Colunas 'id' e 'name' não encontradas na resposta dos países.")
+            st.stop()
+
+    except Exception as e:
+        st.error(f"Erro ao processar países: {e}")
+        st.stop()
 
 if indicators.empty:
     st.warning("Nenhum indicador disponível.")
 else:
-    indicator_options = indicators.set_index('id')['name'].to_dict()
-    selected_indicator = st.sidebar.selectbox(
-        'Escolha um indicador',
-        list(indicator_options.keys()),
-        format_func=lambda x: indicator_options[x]
-    )
+    try:
+        # Ajustando a verificação de colunas
+        if 'id' in indicators.columns and 'name' in indicators.columns:
+            indicator_options = indicators.set_index('id')['name'].to_dict()
+            selected_indicator = st.sidebar.selectbox(
+                'Escolha um indicador',
+                list(indicator_options.keys()),
+                format_func=lambda x: indicator_options[x]
+            )
 
-    # Definindo o intervalo de anos
-    min_year = 2000
-    max_year = 2022
-    from_year, to_year = st.sidebar.slider(
-        'Selecione o intervalo de anos',
-        min_value=min_year,
-        max_value=max_year,
-        value=[min_year, max_year]
-    )
+            # Definindo o intervalo de anos
+            min_year = 2000
+            max_year = 2022
+            from_year, to_year = st.sidebar.slider(
+                'Selecione o intervalo de anos',
+                min_value=min_year,
+                max_value=max_year,
+                value=[min_year, max_year]
+            )
 
-    # Obtendo os dados do indicador selecionado para o país selecionado
-    data_df = get_indicator_data(selected_country, selected_indicator, from_year, to_year)
+            # Obtendo os dados do indicador selecionado para o país selecionado
+            data_df = get_indicator_data(selected_country, selected_indicator, from_year, to_year)
 
-    # Verificando se o DataFrame não está vazio
-    if not data_df.empty:
-        st.header(f'Dados de {indicator_options[selected_indicator]} para {country_options[selected_country]} ao longo do tempo')
-        data_df['year'] = pd.to_datetime(data_df['year'], format='%Y')
-        st.line_chart(data_df.set_index('year')['value'])
-    else:
-        st.warning("Nenhum dado disponível para o país e indicador selecionados.")
+            # Verificando se o DataFrame não está vazio
+            if not data_df.empty:
+                st.header(f'Dados de {indicator_options[selected_indicator]} para {country_options[selected_country]} ao longo do tempo')
+                data_df['year'] = pd.to_datetime(data_df['year'], format='%Y')
+                st.line_chart(data_df.set_index('year')['value'])
+            else:
+                st.warning("Nenhum dado disponível para o país e indicador selecionados.")
+        else:
+            st.error("Colunas 'id' e 'name' não encontradas na resposta dos indicadores.")
+            st.stop()
+
+    except Exception as e:
+        st.error(f"Erro ao processar indicadores: {e}")
