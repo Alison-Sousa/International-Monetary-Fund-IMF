@@ -34,7 +34,7 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         st.write(f"Solicitando dados da URL: {url}")  # Mostra a URL solicitada
         response = requests.get(url)
         data = response.json()
-        
+
         st.write("Resposta da API:", data)  # Mostra a resposta da API
 
         if not data or 'data' not in data:
@@ -48,22 +48,46 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         st.error(f"Erro ao obter dados: {e}")
         return pd.DataFrame()
 
-# Seleção de países
-countries = get_countries()
-country_id = st.selectbox("Selecione um País:", options=list(countries.keys()), format_func=lambda x: countries[x])
+# Sidebar para seleção
+with st.sidebar:
+    countries = get_countries()
+    selected_countries = st.multiselect("Selecione Países:", options=list(countries.keys()), format_func=lambda x: countries[x])
 
-# Seleção de indicadores
-indicators = get_indicators()
-indicator_id = st.selectbox("Selecione um Indicador:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
+    indicators = get_indicators()
+    selected_indicators = st.multiselect("Selecione Indicadores:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
 
-# Seleção de anos
-start_year = st.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
-end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
+    start_year = st.number_input("Ano de Início:", value=2000, min_value=1900, max_value=2024)
+    end_year = st.number_input("Ano de Fim:", value=2024, min_value=1900, max_value=2024)
 
 # Botão para obter dados
 if st.button("Obter Dados"):
-    df = get_indicator_data(country_id, indicator_id, start_year, end_year)
-    if not df.empty:
-        st.line_chart(df.set_index('year'))
+    all_data = []
+    
+    # Obtém dados para cada país e indicador selecionados
+    for country_id in selected_countries:
+        for indicator_id in selected_indicators:
+            df = get_indicator_data(country_id, indicator_id, start_year, end_year)
+            if not df.empty:
+                df['country'] = countries[country_id]  # Adiciona nome do país
+                df['indicator'] = indicators[indicator_id]  # Adiciona nome do indicador
+                all_data.append(df)
+
+    if all_data:
+        combined_df = pd.concat(all_data)
+        
+        # Exibe os dados em uma tabela
+        st.write("Dados Obtidos:")
+        st.dataframe(combined_df)
+
+        # Gráfico
+        st.line_chart(combined_df.set_index('year')['value'])
+
+        # Download de dados
+        st.download_button(
+            label="Baixar Dados em CSV",
+            data=combined_df.to_csv(index=False),
+            file_name="indicadores_economicos.csv",
+            mime="text/csv"
+        )
     else:
         st.warning("Nenhum dado disponível para o intervalo de anos selecionado.")
