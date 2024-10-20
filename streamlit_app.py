@@ -13,6 +13,7 @@ st.set_page_config(
 def get_all_indicators():
     """Obter todos os indicadores do Banco Mundial."""
     try:
+        # Tentando buscar os indicadores
         indicators = wb.search('')  # Obtém todos os indicadores
         return indicators[['id', 'name']]
     except Exception as e:
