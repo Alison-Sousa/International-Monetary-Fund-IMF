@@ -44,7 +44,18 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
             print(f"Response: {response.text}")  # Log the response text for debugging
             return pd.DataFrame()
 
-        data = response.json()
+        # Check if the response is empty
+        if not response.text:
+            st.error("Error: Received empty response.")
+            return pd.DataFrame()
+
+        # Try to parse the JSON response
+        try:
+            data = response.json()
+        except ValueError:
+            st.error("Error: Unable to parse JSON response.")
+            print(f"Response content: {response.text}")  # Log the raw response content
+            return pd.DataFrame()
 
         # Check if the data is present
         if "values" in data and indicator_id in data["values"] and country_id in data["values"][indicator_id]:
