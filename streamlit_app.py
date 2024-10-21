@@ -15,6 +15,12 @@ def get_countries():
     """Get the list of countries from the IMF."""
     url = "https://www.imf.org/external/datamapper/api/v1/countries"
     response = requests.get(url)
+
+    # Check if the request was successful
+    if response.status_code != 200:
+        st.error(f"Failed to fetch countries: {response.status_code} - {response.text}")
+        return {}
+
     data = response.json()
     countries = {key: value['label'] for key, value in data['countries'].items()}
     return countries
@@ -25,6 +31,12 @@ def get_indicators():
     """Get the list of indicators from the IMF."""
     url = "https://www.imf.org/external/datamapper/api/v1/indicators"
     response = requests.get(url)
+
+    # Check if the request was successful
+    if response.status_code != 200:
+        st.error(f"Failed to fetch indicators: {response.status_code} - {response.text}")
+        return {}
+
     data = response.json()
     indicators = {key: value['label'] for key, value in data['indicators'].items()}
     return indicators
@@ -35,13 +47,11 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Get data for a specific indicator for a country from the IMF."""
     try:
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
-        st.write(f"Requesting URL: {url}")  # Log the request URL to the Streamlit app
         response = requests.get(url)
 
         # Check if the request was successful
         if response.status_code != 200:
-            st.error(f"Error: Received status code {response.status_code}")
-            st.write(f"Response: {response.text}")  # Log the response text for debugging
+            st.error(f"Error while fetching data: {response.status_code} - {response.text}")
             return pd.DataFrame()
 
         # Check if the response is empty
@@ -52,9 +62,8 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
         # Try to parse the JSON response
         try:
             data = response.json()
-        except ValueError:
-            st.error("Error: Unable to parse JSON response.")
-            st.write(f"Response content: {response.text}")  # Log the raw response content
+        except ValueError as e:
+            st.error(f"Error: Unable to parse JSON response. {e} - Response content: {response.text}")
             return pd.DataFrame()
 
         # Check if the data is present
