@@ -35,13 +35,13 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Get data for a specific indicator for a country from the IMF."""
     try:
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
-        print(f"Requesting URL: {url}")  # Log the request URL
+        st.write(f"Requesting URL: {url}")  # Log the request URL to the Streamlit app
         response = requests.get(url)
 
         # Check if the request was successful
         if response.status_code != 200:
             st.error(f"Error: Received status code {response.status_code}")
-            print(f"Response: {response.text}")  # Log the response text for debugging
+            st.write(f"Response: {response.text}")  # Log the response text for debugging
             return pd.DataFrame()
 
         # Check if the response is empty
@@ -54,7 +54,7 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
             data = response.json()
         except ValueError:
             st.error("Error: Unable to parse JSON response.")
-            print(f"Response content: {response.text}")  # Log the raw response content
+            st.write(f"Response content: {response.text}")  # Log the raw response content
             return pd.DataFrame()
 
         # Check if the data is present
@@ -65,6 +65,7 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
             df['year'] = pd.to_numeric(df['year'])
             return df
         else:
+            st.error("Error: No data available for the selected country and indicator.")
             return pd.DataFrame()  # Return an empty DataFrame if there are no data
     except Exception as e:
         st.error(f"Error while obtaining data: {e}")
