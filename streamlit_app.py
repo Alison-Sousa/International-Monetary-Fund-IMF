@@ -20,9 +20,13 @@ def get_countries():
         st.error(f"Failed to fetch countries: {response.status_code} - {response.text}")
         return {}
     
-    data = response.json()
-    countries = {key: value['label'] for key, value in data['countries'].items()}
-    return countries
+    try:
+        data = response.json()
+        countries = {key: value['label'] for key, value in data['countries'].items()}
+        return countries
+    except ValueError as e:
+        st.error(f"Error parsing JSON response for countries: {e}")
+        return {}
 
 # Function to get the list of indicators
 @st.cache_data
@@ -35,9 +39,13 @@ def get_indicators():
         st.error(f"Failed to fetch indicators: {response.status_code} - {response.text}")
         return {}
     
-    data = response.json()
-    indicators = {key: value['label'] for key, value in data['indicators'].items()}
-    return indicators
+    try:
+        data = response.json()
+        indicators = {key: value['label'] for key, value in data['indicators'].items()}
+        return indicators
+    except ValueError as e:
+        st.error(f"Error parsing JSON response for indicators: {e}")
+        return {}
 
 # Function to get data from the IMF
 @st.cache_data
@@ -121,3 +129,5 @@ if not df.empty:
         )
     else:
         st.warning("No data available for the selected year range.")
+else:
+    st.warning("No data available for the selected country and indicator.")
