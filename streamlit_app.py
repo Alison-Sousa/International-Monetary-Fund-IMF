@@ -15,12 +15,11 @@ def get_countries():
     """Get the list of countries from the IMF."""
     url = "https://www.imf.org/external/datamapper/api/v1/countries"
     response = requests.get(url)
-
-    # Check if the request was successful
+    
     if response.status_code != 200:
         st.error(f"Failed to fetch countries: {response.status_code} - {response.text}")
         return {}
-
+    
     data = response.json()
     countries = {key: value['label'] for key, value in data['countries'].items()}
     return countries
@@ -31,35 +30,31 @@ def get_indicators():
     """Get the list of indicators from the IMF."""
     url = "https://www.imf.org/external/datamapper/api/v1/indicators"
     response = requests.get(url)
-
-    # Check if the request was successful
+    
     if response.status_code != 200:
         st.error(f"Failed to fetch indicators: {response.status_code} - {response.text}")
         return {}
-
+    
     data = response.json()
     indicators = {key: value['label'] for key, value in data['indicators'].items()}
     return indicators
 
 # Function to get data from the IMF
 @st.cache_data
-def get_indicator_data(country_id, indicator_id, start_year, end_year):
+def get_indicator_data(country_id, indicator_id):
     """Get data for a specific indicator for a country from the IMF."""
     try:
-        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
+        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}"
         response = requests.get(url)
-
-        # Check if the request was successful
+        
         if response.status_code != 200:
             st.error(f"Error while fetching data: {response.status_code} - {response.text}")
             return pd.DataFrame()
-
-        # Check if the response is empty
+        
         if not response.text:
             st.error("Error: Received empty response.")
             return pd.DataFrame()
-
-        # Try to parse the JSON response
+        
         try:
             data = response.json()
         except ValueError as e:
@@ -75,12 +70,12 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
             return df
         else:
             st.error("Error: No data available for the selected country and indicator.")
-            return pd.DataFrame()  # Return an empty DataFrame if there are no data
+            return pd.DataFrame()
     except Exception as e:
         st.error(f"Error while obtaining data: {e}")
         return pd.DataFrame()
 
-# Sidebar for selecting countries, indicators, and years
+# Sidebar for selecting countries and indicators
 st.sidebar.header("Search Settings")
 countries = get_countries()
 country_id = st.sidebar.selectbox("Select a Country:", options=list(countries.keys()), format_func=lambda x: countries[x])
@@ -88,14 +83,20 @@ country_id = st.sidebar.selectbox("Select a Country:", options=list(countries.ke
 indicators = get_indicators()
 indicator_id = st.sidebar.selectbox("Select an Indicator:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
 
-start_year = st.sidebar.number_input("Start Year:", value=2000, min_value=1900, max_value=2024)
-end_year = st.sidebar.number_input("End Year:", value=2024, min_value=1900, max_value=2024)
-
 # Automatically obtain data upon changing selections
-df = get_indicator_data(country_id, indicator_id, start_year, end_year)
+df = get_indicator_data(country_id, indicator_id)
+
 if not df.empty:
+    # Select start and end year based on available data
+    start_year = df['year'].min()
+    end_year = df['year'].max()
+
+    selected_start_year = st.sidebar.number_input("Start Year:", value=start_year, min_value=start_year, max_value=end_year)
+    selected_end_year = st.sidebar.number_input("End Year:", value=end_year, min_value=start_year, max_value=end_year)
+
     # Filter the data according to the selected year range
-    df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
+    df_filtered = df[(df['year'] >= selected_start_year) & (df['year'] <= selected_end_year)]
+    
     if not df_filtered.empty:
         # Plot the interactive graph
         fig = px.line(df_filtered, x='year', y='value', 
@@ -107,7 +108,7 @@ if not df.empty:
         st.plotly_chart(fig)
 
         # Display the URL below the graph
-        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
+        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}"
         st.markdown(f"**Data available at:** [API URL]({url})")
 
         # Button to download the CSV
