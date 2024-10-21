@@ -35,7 +35,15 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Get data for a specific indicator for a country from the IMF."""
     try:
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
+        print(f"Requesting URL: {url}")  # Log the request URL
         response = requests.get(url)
+
+        # Check if the request was successful
+        if response.status_code != 200:
+            st.error(f"Error: Received status code {response.status_code}")
+            print(f"Response: {response.text}")  # Log the response text for debugging
+            return pd.DataFrame()
+
         data = response.json()
 
         # Check if the data is present
