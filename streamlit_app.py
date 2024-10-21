@@ -49,10 +49,14 @@ def get_indicators():
 
 # Function to get data from the IMF
 @st.cache_data
-def get_indicator_data(country_id, indicator_id):
+def get_indicator_data(country_id, indicator_id, start_year, end_year):
     """Get data for a specific indicator for a country from the IMF."""
     try:
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}"
+        if start_year and end_year:
+            periods = ",".join(map(str, range(start_year, end_year + 1)))
+            url += f"?periods={periods}"
+        
         response = requests.get(url)
         
         if response.status_code != 200:
@@ -92,7 +96,7 @@ indicators = get_indicators()
 indicator_id = st.sidebar.selectbox("Select an Indicator:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
 
 # Automatically obtain data upon changing selections
-df = get_indicator_data(country_id, indicator_id)
+df = get_indicator_data(country_id, indicator_id, None, None)
 
 if not df.empty:
     # Select start and end year based on available data
