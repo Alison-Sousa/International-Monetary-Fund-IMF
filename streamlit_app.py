@@ -48,8 +48,14 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
             return df
         else:
             return pd.DataFrame()  # Return an empty DataFrame if there are no data
-    except Exception as e:
+    except requests.exceptions.RequestException as e:
         st.error(f"Error while obtaining data: {e}")
+        return pd.DataFrame()
+    except KeyError as e:
+        st.error(f"Key error: {e}. Please check if the indicator or country ID is correct.")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"An unexpected error occurred: {e}")
         return pd.DataFrame()
 
 # Sidebar for selecting countries, indicators, and years
