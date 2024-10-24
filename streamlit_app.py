@@ -1,58 +1,93 @@
 import streamlit as st
 import requests
 import pandas as pd
-import altair as alt
+import plotly.express as px
 
-# Função para obter a lista de países
+# Title of the application
+st.title("IMF Economic Indicators Dashboard")
+
+# Add the logo.svg image in the sidebar
+st.sidebar.image("logo.svg", use_column_width=True)
+
+# Function to get the list of countries
+@st.cache_data
 def get_countries():
+    """Get the list of countries from the IMF."""
     url = "https://www.imf.org/external/datamapper/api/v1/countries"
     response = requests.get(url)
     data = response.json()
-    countries = {item['id']: item['name'] for item in data['countries']}
+    countries = {key: value['label'] for key, value in data['countries'].items()}
     return countries
 
-# Função para obter a lista de indicadores
+# Function to get the list of indicators
+@st.cache_data
 def get_indicators():
+    """Get the list of indicators from the IMF."""
     url = "https://www.imf.org/external/datamapper/api/v1/indicators"
     response = requests.get(url)
     data = response.json()
-    indicators = {item['id']: item['name'] for item in data['indicators']}
+    indicators = {key: value['label'] for key, value in data['indicators'].items()}
     return indicators
 
-# Função para obter dados do indicador para um país específico
-def get_indicator_data(country, indicator):
-    url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator}/{country}"
-    response = requests.get(url)
-    data = response.json()
-    return data
+# Function to get data from the IMF
+@st.cache_data
+def get_indicator_data(country_id, indicator_id, start_year, end_year):
+    """Get data for a specific indicator for a country from the IMF."""
+    try:
+        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
+        response = requests.get(url)
+        data = response.json()
 
-# Configuração do Streamlit
-st.title("API do FMI - Dados de Países e Indicadores")
+        # Check if the data is present
+        if "values" in data and indicator_id in data["values"] and country_id in data["values"][indicator_id]:
+            years_data = data["values"][indicator_id][country_id]
+            # Convert the data into a DataFrame
+            df = pd.DataFrame(years_data.items(), columns=['year', 'value'])
+            df['year'] = pd.to_numeric(df['year'])
+            return df
+        else:
+            return pd.DataFrame()  # Return an empty DataFrame if there are no data
+    except Exception as e:
+        st.error(f"Error while obtaining data: {e}")
+        return pd.DataFrame()
 
-# Sidebar
-st.sidebar.header("Configurações")
+# Sidebar for selecting countries, indicators, and years
+st.sidebar.header("Search Settings")
 countries = get_countries()
+country_id = st.sidebar.selectbox("Select a Country:", options=list(countries.keys()), format_func=lambda x: countries[x])
+
 indicators = get_indicators()
+indicator_id = st.sidebar.selectbox("Select an Indicator:", options=list(indicators.keys()), format_func=lambda x: indicators[x])
 
-# Seleção de país e indicador
-selected_country = st.sidebar.selectbox("Selecione um País", options=list(countries.keys()), format_func=lambda x: countries[x])
-selected_indicator = st.sidebar.selectbox("Selecione um Indicador", options=list(indicators.keys()), format_func=lambda x: indicators[x])
+start_year = st.sidebar.number_input("Start Year:", value=2000, min_value=1900, max_value=2024)
+end_year = st.sidebar.number_input("End Year:", value=2024, min_value=1900, max_value=2024)
 
-# Botão para buscar dados
-if st.sidebar.button("Buscar Dados"):
-    data = get_indicator_data(selected_country, selected_indicator)
+# Automatically obtain data upon changing selections
+df = get_indicator_data(country_id, indicator_id, start_year, end_year)
+if not df.empty:
+    # Filter the data according to the selected year range
+    df_filtered = df[(df['year'] >= start_year) & (df['year'] <= end_year)]
+    if not df_filtered.empty:
+        # Plot the interactive graph
+        fig = px.line(df_filtered, x='year', y='value', 
+                      title=f"{indicators[indicator_id]} in {countries[country_id]}",
+                      labels={'value': indicators[indicator_id], 'year': 'Year'},
+                      markers=True)
+        fig.update_traces(line=dict(width=2), marker=dict(size=5))
+        fig.update_layout(hovermode='x unified', showlegend=False)
+        st.plotly_chart(fig)
 
-    # Processar os dados para o gráfico
-    df = pd.DataFrame(data['data'])
-    df.columns = ['Year', 'Value']
-    df['Year'] = pd.to_datetime(df['Year'], format='%Y')
+        # Display the URL below the graph
+        url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
+        st.markdown(f"**Data available at:** [API URL]({url})")
 
-    # Criar gráfico interativo
-    chart = alt.Chart(df).mark_line().encode(
-        x='Year:T',
-        y='Value:Q'
-    ).properties(
-        title=f"{indicators[selected_indicator]} para {countries[selected_country]}"
-    )
-
-    st.altair_chart(chart, use_container_width=True)
+        # Button to download the CSV
+        csv = df_filtered.to_csv(index=False)
+        st.download_button(
+            label="Download data as CSV",
+            data=csv,
+            file_name=f"{countries[country_id]}_{indicators[indicator_id]}.csv",
+            mime="text/csv",
+        )
+    else:
+        st.warning("No data available for the selected year range.")
