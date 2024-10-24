@@ -36,6 +36,7 @@ def get_indicator_data(country_id, indicator_id, start_year, end_year):
     try:
         url = f"https://www.imf.org/external/datamapper/api/v1/data/{indicator_id}/{country_id}/{start_year}/{end_year}"
         response = requests.get(url)
+        response.raise_for_status()  # Raises an HTTPError for bad responses
         data = response.json()
 
         # Check if the data is present
@@ -91,3 +92,5 @@ if not df.empty:
         )
     else:
         st.warning("No data available for the selected year range.")
+else:
+    st.warning("No data available for the selected parameters.")
